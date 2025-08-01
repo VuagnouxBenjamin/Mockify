@@ -232,6 +232,21 @@ function handleSubmitMouseOut(event) {
     }
 }
 
+// Fonction pour bloquer le rechargement de la page
+function blockPageReload(event) {
+    console.log('Tentative de rechargement détectée');
+    
+    // Le message à afficher
+    const message = "Êtes-vous sûr de vouloir recharger la page ? Les modifications non enregistrées seront perdues.";
+    
+    // Pour les navigateurs modernes
+    event.preventDefault();
+    event.returnValue = message;
+    
+    // Pour la compatibilité avec les anciens navigateurs
+    return message;
+}
+
 // Écouter les changements d'état de protection
 chrome.storage.local.get(null, function(items) {
     const currentUrl = window.location.href;
@@ -241,8 +256,12 @@ chrome.storage.local.get(null, function(items) {
     const disableCursorKey = 'disableCursorEnabled';
     
     if (items[protectionKey]) {
+        console.log('Mode protection activé - Ajout du blocage de rechargement');
         addProtectionMessage();
         changeFavicon();
+        
+        // Ajouter l'écouteur pour le rechargement de la page
+        window.addEventListener('beforeunload', blockPageReload, { capture: true });
         
         // Vérifier si le blocage des liens est activé (true par défaut)
         if (items[blockLinksKey] === undefined || items[blockLinksKey]) {
@@ -274,8 +293,11 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     // Gérer les changements du mode protection
     if (changes[protectionKey]) {
         if (changes[protectionKey].newValue) {
+            console.log('Mode protection activé via changement - Ajout du blocage de rechargement');
             addProtectionMessage();
             changeFavicon();
+            // Ajouter l'écouteur pour le rechargement de la page
+            window.addEventListener('beforeunload', blockPageReload, { capture: true });
             // Vérifier l'état actuel du blocage des liens et des boutons submit
             chrome.storage.local.get([blockLinksKey, blockSubmitsKey, disableCursorKey], function(result) {
                 if (result[blockLinksKey] === undefined || result[blockLinksKey]) {
@@ -295,6 +317,8 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
         } else {
             removeProtectionMessage();
             restoreFavicon();
+            // Retirer l'écouteur pour le rechargement de la page
+            window.removeEventListener('beforeunload', blockPageReload);
             document.removeEventListener('click', blockLinks, true);
             document.removeEventListener('click', blockSubmits, true);
             document.removeEventListener('submit', blockSubmits, true);
