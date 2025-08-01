@@ -2,8 +2,8 @@
 chrome.webNavigation.onCommitted.addListener(function(details) {
     // Vérifier si c'est un rechargement complet (type 0 = rechargement)
     if (details.transitionType === 'reload') {
-        const hostname = new URL(details.url).hostname;
-        const storageKey = `protectionMode_${hostname}`;
+        const currentUrl = details.url;
+        const storageKey = `protectionMode_${currentUrl}`;
         
         // Réinitialiser le mode de protection pour cette page
         const saveData = {};

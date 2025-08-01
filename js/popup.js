@@ -8,11 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Obtenir l'onglet actif
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     const currentTab = tabs[0];
+    const currentUrl = new URL(currentTab.url).href;
     const hostname = new URL(currentTab.url).hostname;
     urlDisplay.textContent = hostname;
 
     // Charger les états sauvegardés
-    const protectionKey = `protectionMode_${hostname}`;
+    const protectionKey = `protectionMode_${currentUrl}`;
     const blockLinksKey = 'blockLinksEnabled'; // Paramètre global
     const blockSubmitsKey = 'blockSubmitsEnabled'; // Paramètre global
     const disableCursorKey = 'disableCursorEnabled'; // Paramètre global

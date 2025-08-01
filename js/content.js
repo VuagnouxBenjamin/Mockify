@@ -234,8 +234,8 @@ function handleSubmitMouseOut(event) {
 
 // Écouter les changements d'état de protection
 chrome.storage.local.get(null, function(items) {
-    const hostname = window.location.hostname;
-    const protectionKey = `protectionMode_${hostname}`;
+    const currentUrl = window.location.href;
+    const protectionKey = `protectionMode_${currentUrl}`;
     const blockLinksKey = 'blockLinksEnabled';
     const blockSubmitsKey = 'blockSubmitsEnabled';
     const disableCursorKey = 'disableCursorEnabled';
@@ -265,8 +265,8 @@ chrome.storage.local.get(null, function(items) {
 
 // Écouter les mises à jour du stockage
 chrome.storage.onChanged.addListener(function(changes, namespace) {
-    const hostname = window.location.hostname;
-    const protectionKey = `protectionMode_${hostname}`;
+    const currentUrl = window.location.href;
+    const protectionKey = `protectionMode_${currentUrl}`;
     const blockLinksKey = 'blockLinksEnabled';
     const blockSubmitsKey = 'blockSubmitsEnabled';
     const disableCursorKey = 'disableCursorEnabled';
