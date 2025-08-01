@@ -68,6 +68,14 @@ function restoreFavicon() {
     }
 }
 
+// Fonction pour bloquer les clics sur les liens
+function blockLinks(event) {
+    if (event.target.tagName === 'A' || event.target.closest('a')) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}
+
 // Fonction pour ajouter le message de protection
 function addProtectionMessage() {
     // Vérifier si le message existe déjà
@@ -108,26 +116,53 @@ function removeProtectionMessage() {
 // Écouter les changements d'état de protection
 chrome.storage.local.get(null, function(items) {
     const hostname = window.location.hostname;
-    const storageKey = `protectionMode_${hostname}`;
+    const protectionKey = `protectionMode_${hostname}`;
+    const blockLinksKey = 'blockLinksEnabled';
     
-    if (items[storageKey]) {
+    if (items[protectionKey]) {
         addProtectionMessage();
         changeFavicon();
+        // Vérifier si le blocage des liens est activé (true par défaut)
+        if (items[blockLinksKey] === undefined || items[blockLinksKey]) {
+            document.addEventListener('click', blockLinks, true);
+        }
     }
 });
 
 // Écouter les mises à jour du stockage
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     const hostname = window.location.hostname;
-    const storageKey = `protectionMode_${hostname}`;
+    const protectionKey = `protectionMode_${hostname}`;
+    const blockLinksKey = 'blockLinksEnabled';
     
-    if (changes[storageKey]) {
-        if (changes[storageKey].newValue) {
+    // Gérer les changements du mode protection
+    if (changes[protectionKey]) {
+        if (changes[protectionKey].newValue) {
             addProtectionMessage();
             changeFavicon();
+            // Vérifier l'état actuel du blocage des liens
+            chrome.storage.local.get([blockLinksKey], function(result) {
+                if (result[blockLinksKey] === undefined || result[blockLinksKey]) {
+                    document.addEventListener('click', blockLinks, true);
+                }
+            });
         } else {
             removeProtectionMessage();
             restoreFavicon();
+            document.removeEventListener('click', blockLinks, true);
         }
+    }
+    
+    // Gérer les changements du paramètre de blocage des liens
+    if (changes[blockLinksKey]) {
+        chrome.storage.local.get([protectionKey], function(result) {
+            if (result[protectionKey]) {  // Si le mode protection est actif
+                if (changes[blockLinksKey].newValue) {
+                    document.addEventListener('click', blockLinks, true);
+                } else {
+                    document.removeEventListener('click', blockLinks, true);
+                }
+            }
+        });
     }
 });

@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
   const protectionToggle = document.getElementById('protectionToggle');
+  const blockLinksToggle = document.getElementById('blockLinksToggle');
   const urlDisplay = document.getElementById('currentUrl');
 
   // Obtenir l'onglet actif
@@ -8,20 +9,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const hostname = new URL(currentTab.url).hostname;
     urlDisplay.textContent = hostname;
 
-    // Charger l'état sauvegardé du toggle pour ce site
-    const storageKey = `protectionMode_${hostname}`;
-    chrome.storage.local.get([storageKey], function(result) {
-      protectionToggle.checked = result[storageKey] || false;
+    // Charger les états sauvegardés
+    const protectionKey = `protectionMode_${hostname}`;
+    const blockLinksKey = 'blockLinksEnabled'; // Paramètre global
+
+    chrome.storage.local.get([protectionKey, blockLinksKey], function(result) {
+      protectionToggle.checked = result[protectionKey] || false;
+      // Par défaut à true si non défini
+      blockLinksToggle.checked = result[blockLinksKey] === undefined ? true : result[blockLinksKey];
     });
 
-    // Sauvegarder l'état du toggle quand il change
+    // Sauvegarder l'état du toggle de protection quand il change
     protectionToggle.addEventListener('change', function() {
       const isEnabled = this.checked;
       const saveData = {};
-      saveData[storageKey] = isEnabled;
+      saveData[protectionKey] = isEnabled;
       
       chrome.storage.local.set(saveData, function() {
         console.log(`Mode protection ${isEnabled ? 'activé' : 'désactivé'} pour ${hostname}`);
+      });
+    });
+
+    // Sauvegarder l'état du toggle de blocage des liens
+    blockLinksToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+      const saveData = {};
+      saveData[blockLinksKey] = isEnabled;
+      
+      chrome.storage.local.set(saveData, function() {
+        console.log(`Blocage des liens ${isEnabled ? 'activé' : 'désactivé'}`);
       });
     });
   });
