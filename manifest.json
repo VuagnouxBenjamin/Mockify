@@ -3,7 +3,7 @@
   "name": "Mockify",
   "version": "1.0",
   "description": "Une extension Chrome pour Mockify",
-  "permissions": [],
+  "permissions": ["storage", "tabs", "activeTab"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

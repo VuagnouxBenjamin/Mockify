@@ -9,7 +9,16 @@
   <div id="app">
     <h1>Mockify</h1>
     <div id="content">
-      <!-- Le contenu de votre extension ira ici -->
+      <div class="site-info">
+        <span id="currentUrl" class="current-url"></span>
+      </div>
+      <div class="toggle-container">
+        <label class="toggle-label">Mode Protection</label>
+        <label class="switch">
+          <input type="checkbox" id="protectionToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
     </div>
   </div>
   <script src="js/popup.js"></script>
