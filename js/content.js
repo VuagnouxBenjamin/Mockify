@@ -70,7 +70,8 @@ function restoreFavicon() {
 
 // Fonction pour bloquer les clics sur les liens
 function blockLinks(event) {
-    if (event.target.tagName === 'A' || event.target.closest('a')) {
+    const element = event.target.tagName === 'A' ? event.target : event.target.closest('a');
+    if (element) {
         event.preventDefault();
         event.stopPropagation();
     }
@@ -78,32 +79,29 @@ function blockLinks(event) {
 
 // Fonction pour bloquer les soumissions de formulaire
 function blockSubmits(event) {
+    let element = null;
+    
     // Bloquer les inputs de type submit
-    if (event.target.type === 'submit' || event.target.closest('input[type="submit"]')) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
+    if (event.target.type === 'submit') {
+        element = event.target;
+    } else if (event.target.closest('input[type="submit"]')) {
+        element = event.target.closest('input[type="submit"]');
     }
     
     // Bloquer les boutons de type submit (explicite ou implicite)
-    if (event.target.tagName === 'BUTTON') {
+    if (!element && event.target.tagName === 'BUTTON') {
         const type = event.target.getAttribute('type');
         if (!type || type === 'submit') {  // Les boutons sans type sont submit par défaut
-            event.preventDefault();
-            event.stopPropagation();
-            return;
+            element = event.target;
         }
     }
     
     // Bloquer les boutons submit dans l'ascendance
-    if (event.target.closest('button[type="submit"]')) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
+    if (!element && event.target.closest('button[type="submit"]')) {
+        element = event.target.closest('button[type="submit"]');
     }
     
-    // Bloquer les soumissions de formulaire directes
-    if (event.type === 'submit') {
+    if (element || event.type === 'submit') {
         event.preventDefault();
         event.stopPropagation();
     }
@@ -146,25 +144,122 @@ function removeProtectionMessage() {
     }
 }
 
+// Fonction pour appliquer le style du curseur
+function applyCursorStyle(element) {
+    if (element) {
+        element.style.cursor = 'not-allowed';
+    }
+}
+
+// Fonction pour restaurer le style du curseur par défaut
+function restoreCursorStyle(element) {
+    if (element) {
+        element.style.cursor = '';
+    }
+}
+
+// Fonction pour gérer le survol des liens
+function handleLinkHover(event) {
+    const element = event.target.tagName === 'A' ? event.target : event.target.closest('a');
+    if (element) {
+        chrome.storage.local.get(['blockLinksEnabled', 'disableCursorEnabled'], function(result) {
+            // Vérifier si le blocage des liens et le curseur sont activés
+            if ((result.blockLinksEnabled === undefined || result.blockLinksEnabled) && result.disableCursorEnabled) {
+                applyCursorStyle(element);
+            } else {
+                restoreCursorStyle(element);
+            }
+        });
+    }
+}
+
+// Fonction pour gérer la sortie de survol des liens
+function handleLinkMouseOut(event) {
+    const element = event.target.tagName === 'A' ? event.target : event.target.closest('a');
+    if (element) {
+        restoreCursorStyle(element);
+    }
+}
+
+// Fonction pour gérer le survol des boutons submit
+function handleSubmitHover(event) {
+    let element = null;
+    
+    if (event.target.type === 'submit') {
+        element = event.target;
+    } else if (event.target.closest('input[type="submit"]')) {
+        element = event.target.closest('input[type="submit"]');
+    } else if (event.target.tagName === 'BUTTON') {
+        const type = event.target.getAttribute('type');
+        if (!type || type === 'submit') {
+            element = event.target;
+        }
+    } else if (event.target.closest('button[type="submit"]')) {
+        element = event.target.closest('button[type="submit"]');
+    }
+    
+    if (element) {
+        chrome.storage.local.get(['blockSubmitsEnabled', 'disableCursorEnabled'], function(result) {
+            // Vérifier si le blocage des boutons submit et le curseur sont activés
+            if ((result.blockSubmitsEnabled === undefined || result.blockSubmitsEnabled) && result.disableCursorEnabled) {
+                applyCursorStyle(element);
+            } else {
+                restoreCursorStyle(element);
+            }
+        });
+    }
+}
+
+// Fonction pour gérer la sortie de survol des boutons submit
+function handleSubmitMouseOut(event) {
+    let element = null;
+    
+    if (event.target.type === 'submit') {
+        element = event.target;
+    } else if (event.target.closest('input[type="submit"]')) {
+        element = event.target.closest('input[type="submit"]');
+    } else if (event.target.tagName === 'BUTTON') {
+        const type = event.target.getAttribute('type');
+        if (!type || type === 'submit') {
+            element = event.target;
+        }
+    } else if (event.target.closest('button[type="submit"]')) {
+        element = event.target.closest('button[type="submit"]');
+    }
+    
+    if (element) {
+        restoreCursorStyle(element);
+    }
+}
+
 // Écouter les changements d'état de protection
 chrome.storage.local.get(null, function(items) {
     const hostname = window.location.hostname;
     const protectionKey = `protectionMode_${hostname}`;
     const blockLinksKey = 'blockLinksEnabled';
     const blockSubmitsKey = 'blockSubmitsEnabled';
+    const disableCursorKey = 'disableCursorEnabled';
     
     if (items[protectionKey]) {
         addProtectionMessage();
         changeFavicon();
+        
         // Vérifier si le blocage des liens est activé (true par défaut)
         if (items[blockLinksKey] === undefined || items[blockLinksKey]) {
             document.addEventListener('click', blockLinks, true);
         }
+        // Ajouter les écouteurs de survol pour les liens
+        document.addEventListener('mouseover', handleLinkHover, true);
+        document.addEventListener('mouseout', handleLinkMouseOut, true);
+        
         // Vérifier si le blocage des boutons submit est activé (true par défaut)
         if (items[blockSubmitsKey] === undefined || items[blockSubmitsKey]) {
             document.addEventListener('click', blockSubmits, true);
             document.addEventListener('submit', blockSubmits, true);
         }
+        // Ajouter les écouteurs de survol pour les boutons submit
+        document.addEventListener('mouseover', handleSubmitHover, true);
+        document.addEventListener('mouseout', handleSubmitMouseOut, true);
     }
 });
 
@@ -174,6 +269,7 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     const protectionKey = `protectionMode_${hostname}`;
     const blockLinksKey = 'blockLinksEnabled';
     const blockSubmitsKey = 'blockSubmitsEnabled';
+    const disableCursorKey = 'disableCursorEnabled';
     
     // Gérer les changements du mode protection
     if (changes[protectionKey]) {
@@ -181,13 +277,19 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
             addProtectionMessage();
             changeFavicon();
             // Vérifier l'état actuel du blocage des liens et des boutons submit
-            chrome.storage.local.get([blockLinksKey, blockSubmitsKey], function(result) {
+            chrome.storage.local.get([blockLinksKey, blockSubmitsKey, disableCursorKey], function(result) {
                 if (result[blockLinksKey] === undefined || result[blockLinksKey]) {
                     document.addEventListener('click', blockLinks, true);
+                    if (result[disableCursorKey]) {
+                        document.addEventListener('mouseover', handleLinkHover, true);
+                    }
                 }
                 if (result[blockSubmitsKey] === undefined || result[blockSubmitsKey]) {
                     document.addEventListener('click', blockSubmits, true);
                     document.addEventListener('submit', blockSubmits, true);
+                    if (result[disableCursorKey]) {
+                        document.addEventListener('mouseover', handleSubmitHover, true);
+                    }
                 }
             });
         } else {
@@ -196,6 +298,10 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
             document.removeEventListener('click', blockLinks, true);
             document.removeEventListener('click', blockSubmits, true);
             document.removeEventListener('submit', blockSubmits, true);
+            document.removeEventListener('mouseover', handleLinkHover, true);
+            document.removeEventListener('mouseout', handleLinkMouseOut, true);
+            document.removeEventListener('mouseover', handleSubmitHover, true);
+            document.removeEventListener('mouseout', handleSubmitMouseOut, true);
         }
     }
     
