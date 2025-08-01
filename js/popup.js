@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   const protectionToggle = document.getElementById('protectionToggle');
   const blockLinksToggle = document.getElementById('blockLinksToggle');
+  const blockSubmitsToggle = document.getElementById('blockSubmitsToggle');
   const urlDisplay = document.getElementById('currentUrl');
 
   // Obtenir l'onglet actif
@@ -12,11 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Charger les états sauvegardés
     const protectionKey = `protectionMode_${hostname}`;
     const blockLinksKey = 'blockLinksEnabled'; // Paramètre global
+    const blockSubmitsKey = 'blockSubmitsEnabled'; // Paramètre global
 
-    chrome.storage.local.get([protectionKey, blockLinksKey], function(result) {
+    chrome.storage.local.get([protectionKey, blockLinksKey, blockSubmitsKey], function(result) {
       protectionToggle.checked = result[protectionKey] || false;
       // Par défaut à true si non défini
       blockLinksToggle.checked = result[blockLinksKey] === undefined ? true : result[blockLinksKey];
+      blockSubmitsToggle.checked = result[blockSubmitsKey] === undefined ? true : result[blockSubmitsKey];
     });
 
     // Sauvegarder l'état du toggle de protection quand il change
@@ -38,6 +41,17 @@ document.addEventListener('DOMContentLoaded', function() {
       
       chrome.storage.local.set(saveData, function() {
         console.log(`Blocage des liens ${isEnabled ? 'activé' : 'désactivé'}`);
+      });
+    });
+
+    // Sauvegarder l'état du toggle de blocage des boutons submit
+    blockSubmitsToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+      const saveData = {};
+      saveData[blockSubmitsKey] = isEnabled;
+      
+      chrome.storage.local.set(saveData, function() {
+        console.log(`Blocage des boutons submit ${isEnabled ? 'activé' : 'désactivé'}`);
       });
     });
   });
