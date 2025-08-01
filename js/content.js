@@ -1,3 +1,73 @@
+// Fonction pour sauvegarder le favicon original
+let originalFavicon = null;
+
+// Fonction pour changer le favicon
+function changeFavicon() {
+    // Liste des sélecteurs de favicon possibles
+    const faviconSelectors = [
+        'link[rel="icon"]',
+        'link[rel="shortcut icon"]',
+        'link[rel="alternate icon"]',
+        'link[rel="mask-icon"]',
+        'link[rel="apple-touch-icon"]',
+        'link[class*="favicon"]'
+    ];
+
+    // Sauvegarder tous les favicons originaux s'ils ne sont pas déjà sauvegardés
+    if (!originalFavicon) {
+        originalFavicon = [];
+        faviconSelectors.forEach(selector => {
+            const icons = document.querySelectorAll(selector);
+            icons.forEach(icon => {
+                originalFavicon.push({
+                    element: icon,
+                    href: icon.href,
+                    rel: icon.rel,
+                    type: icon.type
+                });
+            });
+        });
+    }
+
+    // Remplacer tous les favicons existants
+    faviconSelectors.forEach(selector => {
+        const icons = document.querySelectorAll(selector);
+        icons.forEach(icon => {
+            icon.href = chrome.runtime.getURL('icons/icon16.png');
+            // Conserver le type d'origine si c'est un SVG
+            if (!icon.type || !icon.type.includes('svg')) {
+                icon.type = 'image/png';
+            }
+        });
+    });
+
+    // Si aucun favicon n'existe, en créer un nouveau
+    if (document.querySelectorAll(faviconSelectors.join(',')).length === 0) {
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/png';
+        favicon.href = chrome.runtime.getURL('icons/icon16.png');
+        document.head.appendChild(favicon);
+    }
+}
+
+// Fonction pour restaurer le favicon original
+function restoreFavicon() {
+    if (originalFavicon && Array.isArray(originalFavicon)) {
+        originalFavicon.forEach(original => {
+            if (original.element) {
+                original.element.href = original.href;
+                if (original.type) {
+                    original.element.type = original.type;
+                }
+                if (original.rel) {
+                    original.element.rel = original.rel;
+                }
+            }
+        });
+    }
+}
+
 // Fonction pour ajouter le message de protection
 function addProtectionMessage() {
     // Vérifier si le message existe déjà
@@ -42,6 +112,7 @@ chrome.storage.local.get(null, function(items) {
     
     if (items[storageKey]) {
         addProtectionMessage();
+        changeFavicon();
     }
 });
 
@@ -53,8 +124,10 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (changes[storageKey]) {
         if (changes[storageKey].newValue) {
             addProtectionMessage();
+            changeFavicon();
         } else {
             removeProtectionMessage();
+            restoreFavicon();
         }
     }
 });
