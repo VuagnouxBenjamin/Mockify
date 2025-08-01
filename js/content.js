@@ -76,6 +76,39 @@ function blockLinks(event) {
     }
 }
 
+// Fonction pour bloquer les soumissions de formulaire
+function blockSubmits(event) {
+    // Bloquer les inputs de type submit
+    if (event.target.type === 'submit' || event.target.closest('input[type="submit"]')) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+    
+    // Bloquer les boutons de type submit (explicite ou implicite)
+    if (event.target.tagName === 'BUTTON') {
+        const type = event.target.getAttribute('type');
+        if (!type || type === 'submit') {  // Les boutons sans type sont submit par défaut
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+    }
+    
+    // Bloquer les boutons submit dans l'ascendance
+    if (event.target.closest('button[type="submit"]')) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+    
+    // Bloquer les soumissions de formulaire directes
+    if (event.type === 'submit') {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}
+
 // Fonction pour ajouter le message de protection
 function addProtectionMessage() {
     // Vérifier si le message existe déjà
@@ -118,6 +151,7 @@ chrome.storage.local.get(null, function(items) {
     const hostname = window.location.hostname;
     const protectionKey = `protectionMode_${hostname}`;
     const blockLinksKey = 'blockLinksEnabled';
+    const blockSubmitsKey = 'blockSubmitsEnabled';
     
     if (items[protectionKey]) {
         addProtectionMessage();
@@ -125,6 +159,11 @@ chrome.storage.local.get(null, function(items) {
         // Vérifier si le blocage des liens est activé (true par défaut)
         if (items[blockLinksKey] === undefined || items[blockLinksKey]) {
             document.addEventListener('click', blockLinks, true);
+        }
+        // Vérifier si le blocage des boutons submit est activé (true par défaut)
+        if (items[blockSubmitsKey] === undefined || items[blockSubmitsKey]) {
+            document.addEventListener('click', blockSubmits, true);
+            document.addEventListener('submit', blockSubmits, true);
         }
     }
 });
@@ -134,22 +173,29 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     const hostname = window.location.hostname;
     const protectionKey = `protectionMode_${hostname}`;
     const blockLinksKey = 'blockLinksEnabled';
+    const blockSubmitsKey = 'blockSubmitsEnabled';
     
     // Gérer les changements du mode protection
     if (changes[protectionKey]) {
         if (changes[protectionKey].newValue) {
             addProtectionMessage();
             changeFavicon();
-            // Vérifier l'état actuel du blocage des liens
-            chrome.storage.local.get([blockLinksKey], function(result) {
+            // Vérifier l'état actuel du blocage des liens et des boutons submit
+            chrome.storage.local.get([blockLinksKey, blockSubmitsKey], function(result) {
                 if (result[blockLinksKey] === undefined || result[blockLinksKey]) {
                     document.addEventListener('click', blockLinks, true);
+                }
+                if (result[blockSubmitsKey] === undefined || result[blockSubmitsKey]) {
+                    document.addEventListener('click', blockSubmits, true);
+                    document.addEventListener('submit', blockSubmits, true);
                 }
             });
         } else {
             removeProtectionMessage();
             restoreFavicon();
             document.removeEventListener('click', blockLinks, true);
+            document.removeEventListener('click', blockSubmits, true);
+            document.removeEventListener('submit', blockSubmits, true);
         }
     }
     
@@ -161,6 +207,21 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
                     document.addEventListener('click', blockLinks, true);
                 } else {
                     document.removeEventListener('click', blockLinks, true);
+                }
+            }
+        });
+    }
+
+    // Gérer les changements du paramètre de blocage des boutons submit
+    if (changes[blockSubmitsKey]) {
+        chrome.storage.local.get([protectionKey], function(result) {
+            if (result[protectionKey]) {  // Si le mode protection est actif
+                if (changes[blockSubmitsKey].newValue) {
+                    document.addEventListener('click', blockSubmits, true);
+                    document.addEventListener('submit', blockSubmits, true);
+                } else {
+                    document.removeEventListener('click', blockSubmits, true);
+                    document.removeEventListener('submit', blockSubmits, true);
                 }
             }
         });
