@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // Gestion du dropdown des paramètres
+  const settingsBtn = document.querySelector('.settings-dropdown-btn');
+  const settingsContent = document.querySelector('.settings-content');
+
+  settingsBtn.addEventListener('click', function() {
+    this.classList.toggle('active');
+    settingsContent.classList.toggle('active');
+  });
   const protectionToggle = document.getElementById('protectionToggle');
   const blockLinksToggle = document.getElementById('blockLinksToggle');
   const blockSubmitsToggle = document.getElementById('blockSubmitsToggle');
