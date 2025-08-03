@@ -102,13 +102,14 @@ function blockSubmits(event) {
 }
 
 // Fonction pour ajouter le message de protection
-function addProtectionMessage() {
+function addProtectionMessage(snapshotName) {
     // Vérifier si le message existe déjà
-    if (!document.getElementById('mockify-protection-message')) {
+    let messageDiv = document.getElementById('mockify-protection-message');
+    
+    if (!messageDiv) {
         // Créer l'élément du message
-        const messageDiv = document.createElement('div');
+        messageDiv = document.createElement('div');
         messageDiv.id = 'mockify-protection-message';
-        messageDiv.textContent = 'Protected by Mockify';
         
         // Appliquer les styles
         Object.assign(messageDiv.style, {
@@ -128,6 +129,11 @@ function addProtectionMessage() {
         // Ajouter le message au body
         document.body.appendChild(messageDiv);
     }
+
+    // Mettre à jour le texte du message
+    messageDiv.textContent = snapshotName ? 
+        `Currently viewing ${snapshotName} - Mockify` : 
+        'Protected by Mockify';
 }
 
 // Fonction pour supprimer le message de protection
@@ -234,6 +240,49 @@ function blockPageReload(event) {
     // Pour la compatibilité avec les anciens navigateurs
     return message;
 }
+
+// Fonction pour créer un snapshot de la page
+function createPageSnapshot(name) {
+    const snapshot = {
+        html: document.documentElement.outerHTML,
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+        title: document.title,
+        name: name || `Snapshot ${new Date().toLocaleString('fr-FR')}`
+    };
+    
+    return snapshot;
+}
+
+// Fonction pour restaurer un snapshot
+function restorePageSnapshot(snapshot) {
+    // Sauvegarder la position de défilement actuelle
+    const scrollPos = {
+        x: window.scrollX,
+        y: window.scrollY
+    };
+
+    // Remplacer le contenu HTML
+    document.documentElement.innerHTML = snapshot.html;
+    
+    // Restaurer la position de défilement
+    window.scrollTo(scrollPos.x, scrollPos.y);
+
+    // Mettre à jour le message de protection avec le nom du snapshot
+    addProtectionMessage(snapshot.name);
+}
+
+// Écouter les messages du popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'createSnapshot') {
+        const snapshot = createPageSnapshot(request.name);
+        sendResponse(snapshot);
+    } else if (request.action === 'restoreSnapshot') {
+        restorePageSnapshot(request.snapshot);
+        sendResponse({ success: true });
+    }
+    return true;
+});
 
 // Écouter les changements d'état de protection
 chrome.storage.local.get(null, function(items) {
