@@ -77,7 +77,7 @@ function blockLinks(event) {
     }
 }
 
-// Fonction pour bloquer les soumissions de formulaire
+// Fonction pour bloquer les soumissions de formulaire et tous les boutons
 function blockSubmits(event) {
     let element = null;
     
@@ -88,17 +88,11 @@ function blockSubmits(event) {
         element = event.target.closest('input[type="submit"]');
     }
     
-    // Bloquer les boutons de type submit (explicite ou implicite)
+    // Bloquer tous les boutons
     if (!element && event.target.tagName === 'BUTTON') {
-        const type = event.target.getAttribute('type');
-        if (!type || type === 'submit') {  // Les boutons sans type sont submit par défaut
-            element = event.target;
-        }
-    }
-    
-    // Bloquer les boutons submit dans l'ascendance
-    if (!element && event.target.closest('button[type="submit"]')) {
-        element = event.target.closest('button[type="submit"]');
+        element = event.target;
+    } else if (!element && event.target.closest('button')) {
+        element = event.target.closest('button');
     }
     
     if (element || event.type === 'submit') {
@@ -181,7 +175,7 @@ function handleLinkMouseOut(event) {
     }
 }
 
-// Fonction pour gérer le survol des boutons submit
+// Fonction pour gérer le survol des boutons
 function handleSubmitHover(event) {
     let element = null;
     
@@ -190,17 +184,14 @@ function handleSubmitHover(event) {
     } else if (event.target.closest('input[type="submit"]')) {
         element = event.target.closest('input[type="submit"]');
     } else if (event.target.tagName === 'BUTTON') {
-        const type = event.target.getAttribute('type');
-        if (!type || type === 'submit') {
-            element = event.target;
-        }
-    } else if (event.target.closest('button[type="submit"]')) {
-        element = event.target.closest('button[type="submit"]');
+        element = event.target;
+    } else if (event.target.closest('button')) {
+        element = event.target.closest('button');
     }
     
     if (element) {
         chrome.storage.local.get(['blockSubmitsEnabled', 'disableCursorEnabled'], function(result) {
-            // Vérifier si le blocage des boutons submit et le curseur sont activés
+            // Vérifier si le blocage des boutons et le curseur sont activés
             if ((result.blockSubmitsEnabled === undefined || result.blockSubmitsEnabled) && result.disableCursorEnabled) {
                 applyCursorStyle(element);
             } else {
@@ -210,7 +201,7 @@ function handleSubmitHover(event) {
     }
 }
 
-// Fonction pour gérer la sortie de survol des boutons submit
+// Fonction pour gérer la sortie de survol des boutons
 function handleSubmitMouseOut(event) {
     let element = null;
     
@@ -219,12 +210,9 @@ function handleSubmitMouseOut(event) {
     } else if (event.target.closest('input[type="submit"]')) {
         element = event.target.closest('input[type="submit"]');
     } else if (event.target.tagName === 'BUTTON') {
-        const type = event.target.getAttribute('type');
-        if (!type || type === 'submit') {
-            element = event.target;
-        }
-    } else if (event.target.closest('button[type="submit"]')) {
-        element = event.target.closest('button[type="submit"]');
+        element = event.target;
+    } else if (event.target.closest('button')) {
+        element = event.target.closest('button');
     }
     
     if (element) {
