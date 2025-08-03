@@ -20,6 +20,20 @@
         </label>
       </div>
 
+      <div class="snapshot-section">
+        <h2>Snapshots</h2>
+        <div class="snapshot-controls">
+          <div class="snapshot-input-group">
+            <input type="text" id="snapshotName" class="snapshot-name-input" placeholder="Nom du snapshot">
+            <button id="createSnapshot" class="snapshot-btn">Créer un snapshot</button>
+          </div>
+        </div>
+        <div class="snapshots-list">
+          <div id="noSnapshots" class="no-snapshots">Aucun snapshot disponible</div>
+          <ul id="snapshotsList"></ul>
+        </div>
+      </div>
+
       <div class="settings-section">
         <button class="settings-dropdown-btn">
           <h2>Settings</h2>
